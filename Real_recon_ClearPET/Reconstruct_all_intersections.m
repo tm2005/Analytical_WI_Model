@@ -60,7 +60,7 @@ v = linspace(0,(R0)*(sqrt(2)),(367/2+1));
 w = [-v(end:-1:2),v];
 dw = mean(diff(w));
 we = [w-dw/2];
-degstep=0.5; % Change if necessary
+degstep = 1; % Change if necessary
 phideg =  -90+degstep:degstep:90;   
 
 
@@ -181,4 +181,4 @@ end
 %%
 disp("We use totally ")
 disp(sum(perc))
-disp("percent")
+disp("percent of coinc. for all intersections.")
