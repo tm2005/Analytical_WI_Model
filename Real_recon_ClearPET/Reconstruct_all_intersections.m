@@ -173,7 +173,7 @@ for i = 1:48
     end    
     toc
     X=X/max(X(:));
-    % X3D(:,:,i)=X; % uncomment for 
+    % X3D(:,:,i)=X; % uncomment if needed everything in 3D space
     name="set1/img" + i + ".png";
     imwrite(X,name);
     i
