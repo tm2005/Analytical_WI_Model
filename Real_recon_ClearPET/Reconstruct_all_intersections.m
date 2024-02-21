@@ -4,11 +4,10 @@ clc
 %%
 const_list
 
-load('nema30s.mat'); 
+load('Nema30.mat'); 
 load('allzn');
 
 X3D = zeros(256,256,48);
-maxiter = 40;
 
 %% From sectors, modules, crystals and layero to Cart. coordinates. (take a look at "CompToCartesian.m")
 
@@ -36,20 +35,43 @@ zn = z + double(module)*(modulePitch);
 zn = zn + shift*mod(double(rSector+1),2);
 zn=zn -max(zn(:))/2; %centering
 
-clearvars x y z
+clearvars x y z ind
 %% Slice by slice
 for i = 1:48
-%%  Take events only in allzn(i) plane
+    disp("Preprocessing...")
+%  Take events only in allzn(i) plane
     ind1 = ( abs(zn(1,:) - allzn(i)) <1e-2);
     ind2 = ( abs(zn(2,:) - allzn(i)) <1e-2);
-    ind = ind1 & ind2; % all indices on axial distance
-    
-    xi = xn(:,ind);
-    yi = yn(:,ind);
-    
-    x=xi; %change of variables
-    y=yi; %change of variables (this should be erased, but...)
-%%  Preparing the WI 
+    indz(:,:,i) = ind1 & ind2; % all indices on axial distance
+    perc(i) = sum(indz(:,:,i))/size(indz,2);
+end  
+%%
+maxiter = 25;
+disp("Recon. started")
+
+v = linspace(0,(R0),(256/2+1));
+w = [-v(end-1:-1:2),v];
+[X,Y]=meshgrid(w,w);
+R=sqrt(X.^2+Y.^2);
+indr0 = R<R0;
+%% Define image space
+
+v = linspace(0,(R0)*(sqrt(2)),(367/2+1));
+w = [-v(end:-1:2),v];
+dw = mean(diff(w));
+we = [w-dw/2];
+degstep=0.5; % Change if necessary
+phideg =  -90+degstep:degstep:90;   
+
+
+for i = 1:48
+    i
+    disp("In this intersection we use only percent of all coincidances")
+    perc(i)
+    tic
+    x=xn(:,indz(:,:,i)); %change of variables
+    y=yn(:,indz(:,:,i)); %change of variables 
+%  Preparing the WI 
     xm1 = x(1,:)';
     xm2 = x(2,:)';
     
@@ -65,33 +87,17 @@ for i = 1:48
 
     n=size(WI,2);
     WI=double(WI);
-    %%
-    
-    v = linspace(0,(R0),(256/2+1));
-    w = [-v(end-1:-1:2),v];
-    [X,Y]=meshgrid(w,w);
-    R=sqrt(X.^2+Y.^2);
-    ind0 = R<R0;
     
     WI=WI./max(WI(:));
-    
+    ind0 =  abs(WI)>1e-16;
     %%
     % Init guess:
     
     X = 1./WI; % this one
     % X = ones(size(WI)); %or this one
     
-    X(~ind0)=0;
-    %% Define image space
-    
-    v = linspace(0,(R0)*(sqrt(2)),(367/2+1));
-    w = [-v(end:-1:2),v];
-    dw = mean(diff(w));
-    ind0 =  abs(WI)>1e-16;
-    we = [w-dw/2];
-    degstep=1;
-    phideg =  -90+degstep:degstep:90;
-    
+    X(~indr0)=0;
+
     
     for k=1:maxiter % Iterations
     %%  Dithering
@@ -165,9 +171,14 @@ for i = 1:48
 %         figure(5), imagesc(X), colormap gray,axis equal;    % Current reconstruction
     
     end    
+    toc
     X=X/max(X(:));
-    X3D(:,:,i)=X;
+    % X3D(:,:,i)=X; % uncomment for 
     name="set1/img" + i + ".png";
     imwrite(X,name);
     i
 end
+%%
+disp("We use totally ")
+disp(sum(perc))
+disp("percent")
